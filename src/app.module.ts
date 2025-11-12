@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TrabajosModule } from './trabajos/trabajos.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TrabajosModule } from './trabajos/trabajos.module';
       synchronize: true, // ⚠️ Solo para desarrollo, desactivar en producción
     }),
     TrabajosModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
