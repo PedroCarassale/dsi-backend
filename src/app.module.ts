@@ -7,6 +7,7 @@ import { TrabajosModule } from './trabajos/trabajos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { PatentesModule } from './patentes/patentes.module';
 import { MemoriesModule } from './memories/memories.module';
+import { GroupsModule } from './groups/groups.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MemoriesModule } from './memories/memories.module';
     UsuariosModule,
     PatentesModule,
     MemoriesModule,
+    GroupsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
