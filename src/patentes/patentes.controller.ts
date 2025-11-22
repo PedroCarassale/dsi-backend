@@ -9,42 +9,42 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { PatentesService } from './patentes.service';
-import { CreatePatenteDto } from './dto/create-patente.dto';
-import { UpdatePatenteDto } from './dto/update-patente.dto';
+import { PatentsService } from './patentes.service';
+import { CreatePatentDto } from './dto/create-patent.dto';
+import { UpdatePatentDto } from './dto/update-patent.dto';
 
-@Controller('patentes')
-export class PatentesController {
-  constructor(private readonly patentesService: PatentesService) {}
+@Controller('patents')
+export class PatentsController {
+  constructor(private readonly patentsService: PatentsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createPatenteDto: CreatePatenteDto) {
-    const patente = await this.patentesService.create(createPatenteDto);
+  async create(@Body() createPatentDto: CreatePatentDto) {
+    const patent = await this.patentsService.create(createPatentDto);
     return {
-      message: 'Patente creada exitosamente',
-      id: patente.id,
+      message: 'Patent created successfully',
+      id: patent.id,
     };
   }
 
   @Get()
   findAll() {
-    return this.patentesService.findAll();
+    return this.patentsService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.patentesService.findOne(id);
+    return this.patentsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePatenteDto: UpdatePatenteDto) {
-    return this.patentesService.update(id, updatePatenteDto);
+  update(@Param('id') id: string, @Body() updatePatentDto: UpdatePatentDto) {
+    return this.patentsService.update(id, updatePatentDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.patentesService.remove(id);
+    return this.patentsService.remove(id);
   }
 }

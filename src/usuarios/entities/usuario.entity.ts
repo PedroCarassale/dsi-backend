@@ -1,16 +1,20 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
+import { Group } from 'src/groups/entities/group.entity';
 
-@Entity('usuarios')
-export class Usuario {
+@Entity('users')
+export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  nombre: string;
+  name: string;
 
   @Column()
   email: string;
 
   @Column()
-  contraseña: string;
+  password: string;
+
+  @ManyToMany(() => Group, (group) => group.users)
+  groups: Group[];
 }

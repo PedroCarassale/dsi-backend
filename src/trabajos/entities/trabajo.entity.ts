@@ -1,29 +1,33 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { TipoTrabajo } from '../enums/tipo-trabajo.enum';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
+import { WorkType } from '../enums/work-type.enum';
+import { Memory } from 'src/memories/entities/memory.entity';
 
-@Entity('trabajos')
-export class Trabajo {
+@Entity('works')
+export class Work {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  titulo: string;
+  title: string;
 
   @Column('text', { array: true })
-  autores: string[];
+  authors: string[];
 
   @Column()
   issn: string;
 
   @Column()
-  revista: string;
+  journal: string;
 
   @Column()
-  año: number;
+  year: number;
 
   @Column({
     type: 'enum',
-    enum: TipoTrabajo,
+    enum: WorkType,
   })
-  tipo: TipoTrabajo;
+  type: WorkType;
+
+  @ManyToMany(() => Memory, (memory) => memory.works)
+  memories: Memory[];
 }

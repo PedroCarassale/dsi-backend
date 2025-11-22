@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PatentesService } from './patentes.service';
-import { PatentesController } from './patentes.controller';
+import { PatentsService } from './patentes.service';
+import { PatentsController } from './patentes.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Patente } from './entities/patente.entity';
+import { Patent } from './entities/patente.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Patente])],
-  controllers: [PatentesController],
-  providers: [PatentesService],
+  imports: [TypeOrmModule.forFeature([Patent])],
+  controllers: [PatentsController],
+  providers: [PatentsService],
 })
-export class PatentesModule {}
+export class PatentsModule {}

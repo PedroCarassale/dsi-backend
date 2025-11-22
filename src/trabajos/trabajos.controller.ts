@@ -9,42 +9,42 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { TrabajosService } from './trabajos.service';
-import { CreateTrabajoDto } from './dto/create-trabajo.dto';
-import { UpdateTrabajoDto } from './dto/update-trabajo.dto';
+import { WorksService } from './trabajos.service';
+import { CreateWorkDto } from './dto/create-work.dto';
+import { UpdateWorkDto } from './dto/update-work.dto';
 
-@Controller('trabajos')
-export class TrabajosController {
-  constructor(private readonly trabajosService: TrabajosService) {}
+@Controller('works')
+export class WorksController {
+  constructor(private readonly worksService: WorksService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createTrabajoDto: CreateTrabajoDto) {
-    const trabajo = await this.trabajosService.create(createTrabajoDto);
+  async create(@Body() createWorkDto: CreateWorkDto) {
+    const work = await this.worksService.create(createWorkDto);
     return {
-      message: 'Trabajo creado exitosamente',
-      id: trabajo.id,
+      message: 'Work created successfully',
+      id: work.id,
     };
   }
 
   @Get()
   findAll() {
-    return this.trabajosService.findAll();
+    return this.worksService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.trabajosService.findOne(id);
+    return this.worksService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTrabajoDto: UpdateTrabajoDto) {
-    return this.trabajosService.update(id, updateTrabajoDto);
+  update(@Param('id') id: string, @Body() updateWorkDto: UpdateWorkDto) {
+    return this.worksService.update(id, updateWorkDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.trabajosService.remove(id);
+    return this.worksService.remove(id);
   }
 }

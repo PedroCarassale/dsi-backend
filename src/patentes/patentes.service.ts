@@ -1,45 +1,45 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreatePatenteDto } from './dto/create-patente.dto';
-import { UpdatePatenteDto } from './dto/update-patente.dto';
-import { Patente } from './entities/patente.entity';
+import { CreatePatentDto } from './dto/create-patent.dto';
+import { UpdatePatentDto } from './dto/update-patent.dto';
+import { Patent } from './entities/patente.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
-export class PatentesService {
+export class PatentsService {
   constructor(
-    @InjectRepository(Patente)
-    private patenteRepository: Repository<Patente>,
+    @InjectRepository(Patent)
+    private patentRepository: Repository<Patent>,
   ) {}
 
-  async create(createPatenteDto: CreatePatenteDto): Promise<Patente> {
-    const patente = this.patenteRepository.create(createPatenteDto);
-    return await this.patenteRepository.save(patente);
+  async create(createPatentDto: CreatePatentDto): Promise<Patent> {
+    const patent = this.patentRepository.create(createPatentDto);
+    return await this.patentRepository.save(patent);
   }
 
-  async findAll(): Promise<Patente[]> {
-    return await this.patenteRepository.find();
+  async findAll(): Promise<Patent[]> {
+    return await this.patentRepository.find();
   }
 
-  async findOne(id: string): Promise<Patente> {
+  async findOne(id: string): Promise<Patent> {
     try {
-      return await this.patenteRepository.findOneOrFail({ where: { id } });
+      return await this.patentRepository.findOneOrFail({ where: { id } });
     } catch {
-      throw new NotFoundException(`Patente con ID ${id} no encontrada`);
+      throw new NotFoundException(`Patent with ID ${id} not found`);
     }
   }
 
   async update(
     id: string,
-    updatePatenteDto: UpdatePatenteDto,
-  ): Promise<Patente> {
-    const patente = await this.findOne(id);
-    Object.assign(patente, updatePatenteDto);
-    return await this.patenteRepository.save(patente);
+    updatePatentDto: UpdatePatentDto,
+  ): Promise<Patent> {
+    const patent = await this.findOne(id);
+    Object.assign(patent, updatePatentDto);
+    return await this.patentRepository.save(patent);
   }
 
   async remove(id: string): Promise<void> {
-    const patente = await this.findOne(id);
-    await this.patenteRepository.remove(patente);
+    const patent = await this.findOne(id);
+    await this.patentRepository.remove(patent);
   }
 }

@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TrabajosModule } from './trabajos/trabajos.module';
-import { UsuariosModule } from './usuarios/usuarios.module';
-import { PatentesModule } from './patentes/patentes.module';
+import { WorksModule } from './trabajos/trabajos.module';
+import { UsersModule } from './usuarios/usuarios.module';
+import { PatentsModule } from './patentes/patentes.module';
 import { MemoriesModule } from './memories/memories.module';
 import { GroupsModule } from './groups/groups.module';
 
@@ -22,11 +22,11 @@ import { GroupsModule } from './groups/groups.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_DATABASE || 'dsi_backend',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // ⚠️ Solo para desarrollo, desactivar en producción
+      synchronize: true, // ⚠️ Only for development, disable in production
     }),
-    TrabajosModule,
-    UsuariosModule,
-    PatentesModule,
+    WorksModule,
+    UsersModule,
+    PatentsModule,
     MemoriesModule,
     GroupsModule,
   ],

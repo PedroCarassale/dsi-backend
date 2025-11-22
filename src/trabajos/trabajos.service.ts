@@ -1,45 +1,45 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateTrabajoDto } from './dto/create-trabajo.dto';
-import { UpdateTrabajoDto } from './dto/update-trabajo.dto';
-import { Trabajo } from './entities/trabajo.entity';
+import { CreateWorkDto } from './dto/create-work.dto';
+import { UpdateWorkDto } from './dto/update-work.dto';
+import { Work } from './entities/trabajo.entity';
 
 @Injectable()
-export class TrabajosService {
+export class WorksService {
   constructor(
-    @InjectRepository(Trabajo)
-    private trabajoRepository: Repository<Trabajo>,
+    @InjectRepository(Work)
+    private workRepository: Repository<Work>,
   ) {}
 
-  async create(createTrabajoDto: CreateTrabajoDto): Promise<Trabajo> {
-    const trabajo = this.trabajoRepository.create(createTrabajoDto);
-    return await this.trabajoRepository.save(trabajo);
+  async create(createWorkDto: CreateWorkDto): Promise<Work> {
+    const work = this.workRepository.create(createWorkDto);
+    return await this.workRepository.save(work);
   }
 
-  async findAll(): Promise<Trabajo[]> {
-    return await this.trabajoRepository.find();
+  async findAll(): Promise<Work[]> {
+    return await this.workRepository.find();
   }
 
-  async findOne(id: string): Promise<Trabajo> {
+  async findOne(id: string): Promise<Work> {
     try {
-      return await this.trabajoRepository.findOneOrFail({ where: { id } });
+      return await this.workRepository.findOneOrFail({ where: { id } });
     } catch {
-      throw new NotFoundException(`Trabajo con ID ${id} no encontrado`);
+      throw new NotFoundException(`Work with ID ${id} not found`);
     }
   }
 
   async update(
     id: string,
-    updateTrabajoDto: UpdateTrabajoDto,
-  ): Promise<Trabajo> {
-    const trabajo = await this.findOne(id);
-    Object.assign(trabajo, updateTrabajoDto);
-    return await this.trabajoRepository.save(trabajo);
+    updateWorkDto: UpdateWorkDto,
+  ): Promise<Work> {
+    const work = await this.findOne(id);
+    Object.assign(work, updateWorkDto);
+    return await this.workRepository.save(work);
   }
 
   async remove(id: string): Promise<void> {
-    const trabajo = await this.findOne(id);
-    await this.trabajoRepository.remove(trabajo);
+    const work = await this.findOne(id);
+    await this.workRepository.remove(work);
   }
 }

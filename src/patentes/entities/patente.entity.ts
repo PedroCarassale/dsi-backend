@@ -1,19 +1,23 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
+import { Memory } from 'src/memories/entities/memory.entity';
 
-@Entity('patentes')
-export class Patente {
+@Entity('patents')
+export class Patent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  titulo: string;
+  title: string;
 
   @Column()
-  codigo: string;
+  code: string;
 
   @Column()
-  descripcion: string;
+  description: string;
 
   @Column()
-  organismo: string;
+  organization: string;
+
+  @ManyToMany(() => Memory, (memory) => memory.patents)
+  memories: Memory[];
 }
