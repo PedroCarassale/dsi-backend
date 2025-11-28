@@ -5,6 +5,11 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { WorkType } from '../src/trabajos/enums/work-type.enum';
 
+interface CreationResponse {
+  message: string;
+  id: string;
+}
+
 describe('Integration Tests (e2e)', () => {
   let app: INestApplication<App>;
 
@@ -21,6 +26,91 @@ describe('Integration Tests (e2e)', () => {
     await app.close();
   });
 
+  // Helper function para validar respuestas de creación
+  const validateCreationResponse = (
+    response: request.Response,
+    expectedMessage: string,
+  ): string => {
+    const body = response.body as CreationResponse;
+    expect(body).toHaveProperty('message', expectedMessage);
+    expect(body).toHaveProperty('id');
+    expect(typeof body.id).toBe('string');
+    expect(body.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    return body.id;
+  };
+
+  // Helper function para crear un usuario
+  const createUser = async (
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<string> => {
+    const response = await request(app.getHttpServer())
+      .post('/users')
+      .send({ name, email, password })
+      .expect(201);
+    return validateCreationResponse(response, 'User created successfully');
+  };
+
+  // Helper function para crear un trabajo
+  const createWork = async (
+    title: string,
+    authors: string[],
+    issn: string,
+    journal: string,
+    year: number,
+    type: WorkType,
+  ): Promise<string> => {
+    const response = await request(app.getHttpServer())
+      .post('/works')
+      .send({ title, authors, issn, journal, year, type })
+      .expect(201);
+    return validateCreationResponse(response, 'Work created successfully');
+  };
+
+  // Helper function para crear una patente
+  const createPatent = async (
+    title: string,
+    code: string,
+    description: string,
+    organization: string,
+  ): Promise<string> => {
+    const response = await request(app.getHttpServer())
+      .post('/patents')
+      .send({ title, code, description, organization })
+      .expect(201);
+    return validateCreationResponse(response, 'Patent created successfully');
+  };
+
+  // Helper function para crear una memoria
+  const createMemory = async (
+    name: string,
+    year: number,
+    works: { id: string }[],
+    patents: { id: string }[],
+  ): Promise<string> => {
+    const response = await request(app.getHttpServer())
+      .post('/memories')
+      .send({ name, year, works, patents })
+      .expect(201);
+    return validateCreationResponse(response, 'Memory created successfully');
+  };
+
+  // Helper function para crear un grupo
+  const createGroup = async (
+    name: string,
+    users: { id: string }[],
+    memories: { id: string }[],
+  ): Promise<string> => {
+    const response = await request(app.getHttpServer())
+      .post('/groups')
+      .send({ name, users, memories })
+      .expect(201);
+    return validateCreationResponse(response, 'Group created successfully');
+  };
+
   describe('Flujo completo: Crear grupos con usuarios y memorias con trabajos y patentes', () => {
     let userId1: string;
     let userId2: string;
@@ -33,130 +123,73 @@ describe('Integration Tests (e2e)', () => {
     let groupId: string;
 
     it('Paso 1: Crear usuarios', async () => {
-      // Usuario 1
-      const user1Response = await request(app.getHttpServer())
-        .post('/users')
-        .send({
-          name: 'Integration User 1',
-          email: 'integration1@test.com',
-          password: 'pass123',
-        })
-        .expect(201);
-      userId1 = user1Response.body.id;
-      expect(userId1).toBeDefined();
-
-      // Usuario 2
-      const user2Response = await request(app.getHttpServer())
-        .post('/users')
-        .send({
-          name: 'Integration User 2',
-          email: 'integration2@test.com',
-          password: 'pass456',
-        })
-        .expect(201);
-      userId2 = user2Response.body.id;
-      expect(userId2).toBeDefined();
+      userId1 = await createUser(
+        'Integration User 1',
+        'integration1@test.com',
+        'pass123',
+      );
+      userId2 = await createUser(
+        'Integration User 2',
+        'integration2@test.com',
+        'pass456',
+      );
     });
 
     it('Paso 2: Crear trabajos', async () => {
-      // Trabajo 1
-      const work1Response = await request(app.getHttpServer())
-        .post('/works')
-        .send({
-          title: 'Integration Article',
-          authors: ['Author 1', 'Author 2'],
-          issn: '1234-INT1',
-          journal: 'Integration Journal',
-          year: 2024,
-          type: WorkType.ARTICLE,
-        })
-        .expect(201);
-      workId1 = work1Response.body.id;
-      expect(workId1).toBeDefined();
-
-      // Trabajo 2
-      const work2Response = await request(app.getHttpServer())
-        .post('/works')
-        .send({
-          title: 'Integration Book',
-          authors: ['Book Author'],
-          issn: '5678-INT2',
-          journal: 'Integration Publisher',
-          year: 2023,
-          type: WorkType.BOOK,
-        })
-        .expect(201);
-      workId2 = work2Response.body.id;
-      expect(workId2).toBeDefined();
+      workId1 = await createWork(
+        'Integration Article',
+        ['Author 1', 'Author 2'],
+        '1234-INT1',
+        'Integration Journal',
+        2024,
+        WorkType.ARTICLE,
+      );
+      workId2 = await createWork(
+        'Integration Book',
+        ['Book Author'],
+        '5678-INT2',
+        'Integration Publisher',
+        2023,
+        WorkType.BOOK,
+      );
     });
 
     it('Paso 3: Crear patentes', async () => {
-      // Patente 1
-      const patent1Response = await request(app.getHttpServer())
-        .post('/patents')
-        .send({
-          title: 'Integration Patent 1',
-          code: 'INT-PAT-001',
-          description: 'First integration patent',
-          organization: 'Integration Org',
-        })
-        .expect(201);
-      patentId1 = patent1Response.body.id;
-      expect(patentId1).toBeDefined();
-
-      // Patente 2
-      const patent2Response = await request(app.getHttpServer())
-        .post('/patents')
-        .send({
-          title: 'Integration Patent 2',
-          code: 'INT-PAT-002',
-          description: 'Second integration patent',
-          organization: 'Integration Org',
-        })
-        .expect(201);
-      patentId2 = patent2Response.body.id;
-      expect(patentId2).toBeDefined();
+      patentId1 = await createPatent(
+        'Integration Patent 1',
+        'INT-PAT-001',
+        'First integration patent',
+        'Integration Org',
+      );
+      patentId2 = await createPatent(
+        'Integration Patent 2',
+        'INT-PAT-002',
+        'Second integration patent',
+        'Integration Org',
+      );
     });
 
     it('Paso 4: Crear memorias con trabajos y patentes', async () => {
-      // Memoria 1 con work1 y patent1
-      const memory1Response = await request(app.getHttpServer())
-        .post('/memories')
-        .send({
-          name: 'Integration Memory 2024',
-          year: 2024,
-          works: [{ id: workId1 }],
-          patents: [{ id: patentId1 }],
-        })
-        .expect(201);
-      memoryId1 = memory1Response.body.id;
-      expect(memoryId1).toBeDefined();
-
-      // Memoria 2 con work2 y patent2
-      const memory2Response = await request(app.getHttpServer())
-        .post('/memories')
-        .send({
-          name: 'Integration Memory 2023',
-          year: 2023,
-          works: [{ id: workId2 }],
-          patents: [{ id: patentId2 }],
-        })
-        .expect(201);
-      memoryId2 = memory2Response.body.id;
-      expect(memoryId2).toBeDefined();
+      memoryId1 = await createMemory(
+        'Integration Memory 2024',
+        2024,
+        [{ id: workId1 }],
+        [{ id: patentId1 }],
+      );
+      memoryId2 = await createMemory(
+        'Integration Memory 2023',
+        2023,
+        [{ id: workId2 }],
+        [{ id: patentId2 }],
+      );
     });
 
     it('Paso 5: Crear grupo con usuarios y memorias', async () => {
-      const groupResponse = await request(app.getHttpServer())
-        .post('/groups')
-        .send({
-          name: 'Integration Group',
-          users: [{ id: userId1 }, { id: userId2 }],
-          memories: [{ id: memoryId1 }, { id: memoryId2 }],
-        })
-        .expect(201);
-      groupId = groupResponse.body.id;
-      expect(groupId).toBeDefined();
+      groupId = await createGroup(
+        'Integration Group',
+        [{ id: userId1 }, { id: userId2 }],
+        [{ id: memoryId1 }, { id: memoryId2 }],
+      );
     });
 
     it('Paso 6: Verificar que el grupo se creó correctamente', async () => {
@@ -234,23 +267,19 @@ describe('Integration Tests (e2e)', () => {
 
   describe('Verificar validaciones y casos límite', () => {
     it('debería manejar correctamente la creación de múltiples entidades del mismo tipo', async () => {
-      const works = [];
+      const workIds: string[] = [];
 
-      // Crear 5 trabajos
+      // Crear 5 trabajos usando la función helper
       for (let i = 1; i <= 5; i++) {
-        const response = await request(app.getHttpServer())
-          .post('/works')
-          .send({
-            title: `Bulk Work ${i}`,
-            authors: [`Author ${i}`],
-            issn: `BULK-${i}`,
-            journal: 'Bulk Journal',
-            year: 2024,
-            type: WorkType.ARTICLE,
-          })
-          .expect(201);
-
-        works.push(response.body.id);
+        const workId = await createWork(
+          `Bulk Work ${i}`,
+          [`Author ${i}`],
+          `BULK-${i}`,
+          'Bulk Journal',
+          2024,
+          WorkType.ARTICLE,
+        );
+        workIds.push(workId);
       }
 
       // Verificar que todos se crearon
@@ -258,21 +287,20 @@ describe('Integration Tests (e2e)', () => {
         .get('/works')
         .expect(200);
 
-      expect(allWorksResponse.body.length).toBeGreaterThanOrEqual(5);
+      expect(Array.isArray(allWorksResponse.body)).toBe(true);
+      expect(
+        (allWorksResponse.body as unknown[]).length,
+      ).toBeGreaterThanOrEqual(5);
+      expect(workIds).toHaveLength(5);
     });
 
     it('debería poder actualizar parcialmente cualquier entidad', async () => {
-      // Crear un usuario
-      const createResponse = await request(app.getHttpServer())
-        .post('/users')
-        .send({
-          name: 'Partial Update User',
-          email: 'partial@test.com',
-          password: 'password',
-        })
-        .expect(201);
-
-      const userId = createResponse.body.id;
+      // Crear un usuario usando la función helper
+      const userId = await createUser(
+        'Partial Update User',
+        'partial@test.com',
+        'password',
+      );
 
       // Actualizar solo el nombre
       const updateResponse = await request(app.getHttpServer())
@@ -286,4 +314,3 @@ describe('Integration Tests (e2e)', () => {
     });
   });
 });
-
