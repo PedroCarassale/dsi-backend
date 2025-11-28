@@ -29,10 +29,7 @@ export class PatentsService {
     }
   }
 
-  async update(
-    id: string,
-    updatePatentDto: UpdatePatentDto,
-  ): Promise<Patent> {
+  async update(id: string, updatePatentDto: UpdatePatentDto): Promise<Patent> {
     const patent = await this.findOne(id);
     Object.assign(patent, updatePatentDto);
     return await this.patentRepository.save(patent);

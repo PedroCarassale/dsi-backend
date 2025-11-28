@@ -8,4 +8,3 @@ export class UpdateWorkDto {
   year?: number;
   type?: WorkType;
 }
-

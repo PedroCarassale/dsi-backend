@@ -29,10 +29,7 @@ export class WorksService {
     }
   }
 
-  async update(
-    id: string,
-    updateWorkDto: UpdateWorkDto,
-  ): Promise<Work> {
+  async update(id: string, updateWorkDto: UpdateWorkDto): Promise<Work> {
     const work = await this.findOne(id);
     Object.assign(work, updateWorkDto);
     return await this.workRepository.save(work);
