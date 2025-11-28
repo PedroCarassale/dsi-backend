@@ -17,7 +17,15 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:watch": "jest --config ./test/jest-e2e.json --watch",
+    "test:e2e:verbose": "jest --config ./test/jest-e2e.json --verbose",
+    "test:e2e:works": "jest --config ./test/jest-e2e.json works.e2e-spec.ts",
+    "test:e2e:users": "jest --config ./test/jest-e2e.json users.e2e-spec.ts",
+    "test:e2e:patents": "jest --config ./test/jest-e2e.json patents.e2e-spec.ts",
+    "test:e2e:memories": "jest --config ./test/jest-e2e.json memories.e2e-spec.ts",
+    "test:e2e:groups": "jest --config ./test/jest-e2e.json groups.e2e-spec.ts",
+    "test:e2e:integration": "jest --config ./test/jest-e2e.json integration.e2e-spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
