@@ -1,9 +1,4 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreatePatentDto } from './create-patent.dto';
+import { CreatePatentDto } from './create-patente.dto';
 
-export class UpdatePatentDto extends PartialType(CreatePatentDto) {
-  title?: string;
-  code?: string;
-  description?: string;
-  organization?: string;
-}
+export class UpdatePatentDto extends PartialType(CreatePatentDto) {}

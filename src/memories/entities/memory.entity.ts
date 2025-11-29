@@ -1,11 +1,5 @@
 import { Work } from 'src/trabajos/entities/trabajo.entity';
-import {
-  PrimaryGeneratedColumn,
-  Column,
-  Entity,
-  ManyToMany,
-  JoinTable,
-} from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, ManyToMany, JoinTable } from 'typeorm';
 import { Patent } from 'src/patentes/entities/patente.entity';
 import { Group } from 'src/groups/entities/group.entity';
 

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -9,6 +9,7 @@ describe('Groups (e2e)', () => {
   let createdGroupId: string;
   let createdUserId: string;
   let createdMemoryId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -16,27 +17,43 @@ describe('Groups (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
 
-    // Crear un usuario para usar en los grupos
-    const userResponse = await request(app.getHttpServer())
-      .post('/users')
-      .send({
-        name: 'Group Test User',
-        email: 'grouptest@example.com',
-        password: 'password123',
-      });
+    // Crear usuario y obtener token con email único
+    const timestamp = Date.now();
+    const userDto = {
+      name: 'Groups Test User',
+      email: `groups-${timestamp}@example.com`,
+      password: 'password123',
+    };
+
+    const userResponse = await request(app.getHttpServer()).post('/users').send(userDto).expect(201);
     createdUserId = userResponse.body.id;
 
-    // Crear una memoria para usar en los grupos
-    const memoryResponse = await request(app.getHttpServer())
-      .post('/memories')
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
       .send({
-        name: 'Group Test Memory',
-        year: 2024,
-        works: [],
-        patents: [],
-      });
+        email: userDto.email,
+        password: userDto.password,
+      })
+      .expect(201);
+
+    authToken = loginResponse.body.access_token;
+
+    // Crear una memoria para usar en los grupos
+    const memoryResponse = await request(app.getHttpServer()).post('/memories').set('Authorization', `Bearer ${authToken}`).send({
+      name: 'Group Test Memory',
+      year: 2024,
+      works: [],
+      patents: [],
+    });
     createdMemoryId = memoryResponse.body.id;
   });
 
@@ -52,10 +69,7 @@ describe('Groups (e2e)', () => {
         memories: [],
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/groups')
-        .send(createGroupDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/groups').set('Authorization', `Bearer ${authToken}`).send(createGroupDto).expect(201);
 
       expect(response.body).toHaveProperty('message', 'Group created successfully');
       expect(response.body).toHaveProperty('id');
@@ -71,10 +85,7 @@ describe('Groups (e2e)', () => {
         memories: [{ id: createdMemoryId }],
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/groups')
-        .send(createGroupDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/groups').set('Authorization', `Bearer ${authToken}`).send(createGroupDto).expect(201);
 
       expect(response.body).toHaveProperty('id');
     });
@@ -82,9 +93,7 @@ describe('Groups (e2e)', () => {
 
   describe('GET /groups', () => {
     it('debería obtener todos los grupos', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/groups')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/groups').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
@@ -97,9 +106,7 @@ describe('Groups (e2e)', () => {
 
   describe('GET /groups/:id', () => {
     it('debería obtener un grupo por ID', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/groups/${createdGroupId}`)
-        .expect(200);
+      const response = await request(app.getHttpServer()).get(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body).toHaveProperty('id', createdGroupId);
       expect(response.body).toHaveProperty('name', 'Test Group');
@@ -107,7 +114,7 @@ describe('Groups (e2e)', () => {
 
     it('debería retornar error 404 para ID inexistente', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      await request(app.getHttpServer()).get(`/groups/${fakeId}`).expect(404);
+      await request(app.getHttpServer()).get(`/groups/${fakeId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
@@ -117,10 +124,7 @@ describe('Groups (e2e)', () => {
         name: 'Updated Group Name',
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/groups/${createdGroupId}`)
-        .send(updateGroupDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).send(updateGroupDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdGroupId);
       expect(response.body).toHaveProperty('name', 'Updated Group Name');
@@ -132,10 +136,7 @@ describe('Groups (e2e)', () => {
         memories: [{ id: createdMemoryId }],
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/groups/${createdGroupId}`)
-        .send(updateGroupDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).send(updateGroupDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdGroupId);
     });
@@ -146,10 +147,7 @@ describe('Groups (e2e)', () => {
         memories: [],
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/groups/${createdGroupId}`)
-        .send(updateGroupDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).send(updateGroupDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdGroupId);
     });
@@ -157,31 +155,22 @@ describe('Groups (e2e)', () => {
 
   describe('DELETE /groups/:id', () => {
     it('debería eliminar un grupo', async () => {
-      await request(app.getHttpServer())
-        .delete(`/groups/${createdGroupId}`)
-        .expect(204);
+      await request(app.getHttpServer()).delete(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
       // Verificar que el grupo fue eliminado
-      await request(app.getHttpServer())
-        .get(`/groups/${createdGroupId}`)
-        .expect(404);
+      await request(app.getHttpServer()).get(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
   describe('Verificar integridad de datos', () => {
     it('los users y memories relacionados deben seguir existiendo después de eliminar un grupo', async () => {
       // Verificar que el user sigue existiendo
-      const userResponse = await request(app.getHttpServer())
-        .get(`/users/${createdUserId}`)
-        .expect(200);
+      const userResponse = await request(app.getHttpServer()).get(`/users/${createdUserId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(userResponse.body).toHaveProperty('id', createdUserId);
 
       // Verificar que la memory sigue existiendo
-      const memoryResponse = await request(app.getHttpServer())
-        .get(`/memories/${createdMemoryId}`)
-        .expect(200);
+      const memoryResponse = await request(app.getHttpServer()).get(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(memoryResponse.body).toHaveProperty('id', createdMemoryId);
     });
   });
 });
-

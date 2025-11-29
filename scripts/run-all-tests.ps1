@@ -1,83 +1,80 @@
-# Script para ejecutar todos los tests e2e
+# Script para limpiar la base de datos y ejecutar todos los tests E2E
 # Uso: .\scripts\run-all-tests.ps1
 
-Write-Host "`n==================================" -ForegroundColor Cyan
-Write-Host "  Tests E2E - DSI Backend" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
+Write-Host "  Limpieza y Tests E2E" -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
+Write-Host ""
 
-# Verificar que Docker está corriendo
-Write-Host "`n[1/7] Verificando Docker..." -ForegroundColor Yellow
-$dockerRunning = docker ps 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Docker no está corriendo. Por favor inicia Docker Desktop." -ForegroundColor Red
+# Verificar que psql esté disponible
+$psqlCommand = Get-Command psql -ErrorAction SilentlyContinue
+if (-not $psqlCommand) {
+    Write-Host "Error: psql no está instalado o no está en el PATH" -ForegroundColor Red
+    Write-Host "Instala PostgreSQL y asegúrate de que psql esté en el PATH" -ForegroundColor Yellow
     exit 1
 }
-Write-Host "✅ Docker está corriendo" -ForegroundColor Green
 
-# Verificar que la base de datos está corriendo
-Write-Host "`n[2/7] Verificando base de datos..." -ForegroundColor Yellow
-$dbRunning = docker ps | Select-String "dsi-postgres"
-if (-not $dbRunning) {
-    Write-Host "⚠️  Base de datos no está corriendo. Iniciando..." -ForegroundColor Yellow
-    docker-compose up -d
-    Start-Sleep -Seconds 5
-    Write-Host "✅ Base de datos iniciada" -ForegroundColor Green
-} else {
-    Write-Host "✅ Base de datos ya está corriendo" -ForegroundColor Green
+# Configuración de la base de datos (ajusta según tu configuración)
+$DB_HOST = if ($env:DB_HOST) { $env:DB_HOST } else { "localhost" }
+$DB_PORT = if ($env:DB_PORT) { $env:DB_PORT } else { "5432" }
+$DB_USER = if ($env:DB_USERNAME) { $env:DB_USERNAME } else { "postgres" }
+$DB_PASSWORD = if ($env:DB_PASSWORD) { $env:DB_PASSWORD } else { "postgres" }
+$DB_NAME = if ($env:DB_DATABASE) { $env:DB_DATABASE } else { "dsi_backend" }
+
+Write-Host "Configuración de la base de datos:" -ForegroundColor Yellow
+Write-Host "  Host: $DB_HOST" -ForegroundColor Gray
+Write-Host "  Puerto: $DB_PORT" -ForegroundColor Gray
+Write-Host "  Usuario: $DB_USER" -ForegroundColor Gray
+Write-Host "  Base de datos: $DB_NAME" -ForegroundColor Gray
+Write-Host ""
+
+# Paso 1: Limpiar la base de datos
+Write-Host "Paso 1/2: Limpiando la base de datos..." -ForegroundColor Yellow
+$env:PGPASSWORD = $DB_PASSWORD
+
+try {
+    $result = psql -U $DB_USER -d $DB_NAME -h $DB_HOST -p $DB_PORT -f scripts/clean-test-db.sql 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✓ Base de datos limpiada exitosamente" -ForegroundColor Green
+    } else {
+        Write-Host "⚠ Advertencia: Hubo un problema al limpiar la base de datos" -ForegroundColor Yellow
+        Write-Host $result -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Continuando con los tests de todas formas..." -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "⚠ Error al limpiar la base de datos: $_" -ForegroundColor Yellow
+    Write-Host "Continuando con los tests de todas formas..." -ForegroundColor Yellow
 }
 
-# Tests de Works
-Write-Host "`n[3/7] Ejecutando tests de Works..." -ForegroundColor Yellow
-npm run test:e2e:works --silent
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Tests de Works: PASARON" -ForegroundColor Green
-} else {
-    Write-Host "❌ Tests de Works: FALLARON" -ForegroundColor Red
-}
+Write-Host ""
 
-# Tests de Users
-Write-Host "`n[4/7] Ejecutando tests de Users..." -ForegroundColor Yellow
-npm run test:e2e:users --silent
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Tests de Users: PASARON" -ForegroundColor Green
-} else {
-    Write-Host "❌ Tests de Users: FALLARON" -ForegroundColor Red
-}
+# Paso 2: Ejecutar todos los tests E2E
+Write-Host "Paso 2/2: Ejecutando todos los tests E2E..." -ForegroundColor Yellow
+Write-Host ""
 
-# Tests de Patents
-Write-Host "`n[5/7] Ejecutando tests de Patents..." -ForegroundColor Yellow
-npm run test:e2e:patents --silent
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Tests de Patents: PASARON" -ForegroundColor Green
-} else {
-    Write-Host "❌ Tests de Patents: FALLARON" -ForegroundColor Red
-}
+npm run test:e2e
 
-# Tests de Memories
-Write-Host "`n[6/7] Ejecutando tests de Memories..." -ForegroundColor Yellow
-npm run test:e2e:memories --silent
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Tests de Memories: PASARON" -ForegroundColor Green
-} else {
-    Write-Host "❌ Tests de Memories: FALLARON" -ForegroundColor Red
-}
+$testExitCode = $LASTEXITCODE
 
-# Tests de Groups
-Write-Host "`n[7/7] Ejecutando tests de Groups..." -ForegroundColor Yellow
-npm run test:e2e:groups --silent
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Tests de Groups: PASARON" -ForegroundColor Green
-} else {
-    Write-Host "❌ Tests de Groups: FALLARON" -ForegroundColor Red
-}
-
-Write-Host "`n==================================" -ForegroundColor Cyan
-Write-Host "  Tests Completados" -ForegroundColor Cyan
+Write-Host ""
 Write-Host "==================================" -ForegroundColor Cyan
 
-Write-Host "`nPara ejecutar todos los tests a la vez:" -ForegroundColor Yellow
-Write-Host "  npm run test:e2e" -ForegroundColor White
+if ($testExitCode -eq 0) {
+    Write-Host "✓ Todos los tests pasaron exitosamente!" -ForegroundColor Green
+} else {
+    Write-Host "✗ Algunos tests fallaron" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Sugerencias:" -ForegroundColor Yellow
+    Write-Host "  1. Revisa los errores específicos arriba" -ForegroundColor Gray
+    Write-Host "  2. Verifica que la base de datos esté corriendo" -ForegroundColor Gray
+    Write-Host "  3. Asegúrate de que las variables de entorno sean correctas" -ForegroundColor Gray
+}
 
-Write-Host "`nPara ejecutar tests con más detalles:" -ForegroundColor Yellow
-Write-Host "  npm run test:e2e:verbose`n" -ForegroundColor White
+Write-Host "==================================" -ForegroundColor Cyan
 
+# Limpiar la variable de entorno de la contraseña
+Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+
+exit $testExitCode

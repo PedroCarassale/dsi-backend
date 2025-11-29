@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { PatentsService } from './patentes.service';
 import { CreatePatentDto } from './dto/create-patent.dto';
 import { UpdatePatentDto } from './dto/update-patent.dto';

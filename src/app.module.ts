@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { WorksModule } from './trabajos/trabajos.module';
@@ -8,6 +9,8 @@ import { UsersModule } from './usuarios/usuarios.module';
 import { PatentsModule } from './patentes/patentes.module';
 import { MemoriesModule } from './memories/memories.module';
 import { GroupsModule } from './groups/groups.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -24,6 +27,7 @@ import { GroupsModule } from './groups/groups.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true, // ⚠️ Only for development, disable in production
     }),
+    AuthModule,
     WorksModule,
     UsersModule,
     PatentsModule,
@@ -31,6 +35,12 @@ import { GroupsModule } from './groups/groups.module';
     GroupsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

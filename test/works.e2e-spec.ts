@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -8,6 +8,7 @@ import { WorkType } from '../src/trabajos/enums/work-type.enum';
 describe('Works (e2e)', () => {
   let app: INestApplication<App>;
   let createdWorkId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,7 +16,34 @@ describe('Works (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
+
+    // Crear usuario y obtener token con email único
+    const timestamp = Date.now();
+    const userDto = {
+      name: 'Works Test User',
+      email: `works-${timestamp}@example.com`,
+      password: 'password123',
+    };
+
+    await request(app.getHttpServer()).post('/users').send(userDto).expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: userDto.email,
+        password: userDto.password,
+      })
+      .expect(201);
+
+    authToken = loginResponse.body.access_token as string;
   });
 
   afterAll(async () => {
@@ -33,10 +61,7 @@ describe('Works (e2e)', () => {
         type: WorkType.ARTICLE,
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/works')
-        .send(createWorkDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/works').set('Authorization', `Bearer ${authToken}`).send(createWorkDto).expect(201);
 
       expect(response.body).toHaveProperty('message', 'Work created successfully');
       expect(response.body).toHaveProperty('id');
@@ -55,10 +80,7 @@ describe('Works (e2e)', () => {
         type: WorkType.BOOK,
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/works')
-        .send(createWorkDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/works').set('Authorization', `Bearer ${authToken}`).send(createWorkDto).expect(201);
 
       expect(response.body).toHaveProperty('id');
     });
@@ -73,10 +95,7 @@ describe('Works (e2e)', () => {
         type: WorkType.BOOK_CHAPTER,
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/works')
-        .send(createWorkDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/works').set('Authorization', `Bearer ${authToken}`).send(createWorkDto).expect(201);
 
       expect(response.body).toHaveProperty('id');
     });
@@ -84,9 +103,7 @@ describe('Works (e2e)', () => {
 
   describe('GET /works', () => {
     it('debería obtener todos los trabajos', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/works')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/works').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
@@ -106,9 +123,7 @@ describe('Works (e2e)', () => {
 
   describe('GET /works/:id', () => {
     it('debería obtener un trabajo por ID', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/works/${createdWorkId}`)
-        .expect(200);
+      const response = await request(app.getHttpServer()).get(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body).toHaveProperty('id', createdWorkId);
       expect(response.body).toHaveProperty('title', 'Test Article');
@@ -121,7 +136,7 @@ describe('Works (e2e)', () => {
 
     it('debería retornar error 404 para ID inexistente', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      await request(app.getHttpServer()).get(`/works/${fakeId}`).expect(404);
+      await request(app.getHttpServer()).get(`/works/${fakeId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
@@ -132,10 +147,7 @@ describe('Works (e2e)', () => {
         year: 2025,
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/works/${createdWorkId}`)
-        .send(updateWorkDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).send(updateWorkDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdWorkId);
       expect(response.body).toHaveProperty('title', 'Updated Test Article');
@@ -150,30 +162,18 @@ describe('Works (e2e)', () => {
         authors: ['New Author 1', 'New Author 2', 'New Author 3'],
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/works/${createdWorkId}`)
-        .send(updateWorkDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).send(updateWorkDto).expect(200);
 
-      expect(response.body.authors).toEqual([
-        'New Author 1',
-        'New Author 2',
-        'New Author 3',
-      ]);
+      expect(response.body.authors).toEqual(['New Author 1', 'New Author 2', 'New Author 3']);
     });
   });
 
   describe('DELETE /works/:id', () => {
     it('debería eliminar un trabajo', async () => {
-      await request(app.getHttpServer())
-        .delete(`/works/${createdWorkId}`)
-        .expect(204);
+      await request(app.getHttpServer()).delete(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
       // Verificar que el trabajo fue eliminado
-      await request(app.getHttpServer())
-        .get(`/works/${createdWorkId}`)
-        .expect(404);
+      await request(app.getHttpServer()).get(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 });
-

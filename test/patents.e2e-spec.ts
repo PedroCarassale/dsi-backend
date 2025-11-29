@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 describe('Patents (e2e)', () => {
   let app: INestApplication<App>;
   let createdPatentId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -14,7 +15,34 @@ describe('Patents (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
+
+    // Crear usuario y obtener token con email único
+    const timestamp = Date.now();
+    const userDto = {
+      name: 'Patents Test User',
+      email: `patents-${timestamp}@example.com`,
+      password: 'password123',
+    };
+
+    await request(app.getHttpServer()).post('/users').send(userDto).expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: userDto.email,
+        password: userDto.password,
+      })
+      .expect(201);
+
+    authToken = loginResponse.body.access_token;
   });
 
   afterAll(async () => {
@@ -30,10 +58,7 @@ describe('Patents (e2e)', () => {
         organization: 'Test Organization',
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/patents')
-        .send(createPatentDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send(createPatentDto).expect(201);
 
       expect(response.body).toHaveProperty('message', 'Patent created successfully');
       expect(response.body).toHaveProperty('id');
@@ -59,10 +84,7 @@ describe('Patents (e2e)', () => {
       ];
 
       for (const patent of patents) {
-        const response = await request(app.getHttpServer())
-          .post('/patents')
-          .send(patent)
-          .expect(201);
+        const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send(patent).expect(201);
 
         expect(response.body).toHaveProperty('id');
       }
@@ -71,9 +93,7 @@ describe('Patents (e2e)', () => {
 
   describe('GET /patents', () => {
     it('debería obtener todas las patentes', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/patents')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/patents').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
@@ -89,23 +109,18 @@ describe('Patents (e2e)', () => {
 
   describe('GET /patents/:id', () => {
     it('debería obtener una patente por ID', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/patents/${createdPatentId}`)
-        .expect(200);
+      const response = await request(app.getHttpServer()).get(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body).toHaveProperty('id', createdPatentId);
       expect(response.body).toHaveProperty('title', 'Test Patent');
       expect(response.body).toHaveProperty('code', 'PAT-2024-001');
-      expect(response.body).toHaveProperty(
-        'description',
-        'This is a test patent description',
-      );
+      expect(response.body).toHaveProperty('description', 'This is a test patent description');
       expect(response.body).toHaveProperty('organization', 'Test Organization');
     });
 
     it('debería retornar error 404 para ID inexistente', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      await request(app.getHttpServer()).get(`/patents/${fakeId}`).expect(404);
+      await request(app.getHttpServer()).get(`/patents/${fakeId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
@@ -115,10 +130,7 @@ describe('Patents (e2e)', () => {
         title: 'Updated Patent Title',
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/patents/${createdPatentId}`)
-        .send(updatePatentDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).send(updatePatentDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdPatentId);
       expect(response.body).toHaveProperty('title', 'Updated Patent Title');
@@ -133,10 +145,7 @@ describe('Patents (e2e)', () => {
         organization: 'Updated Organization',
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/patents/${createdPatentId}`)
-        .send(updatePatentDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).send(updatePatentDto).expect(200);
 
       expect(response.body).toHaveProperty('description', 'Updated description');
       expect(response.body).toHaveProperty('organization', 'Updated Organization');
@@ -145,15 +154,10 @@ describe('Patents (e2e)', () => {
 
   describe('DELETE /patents/:id', () => {
     it('debería eliminar una patente', async () => {
-      await request(app.getHttpServer())
-        .delete(`/patents/${createdPatentId}`)
-        .expect(204);
+      await request(app.getHttpServer()).delete(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
       // Verificar que la patente fue eliminada
-      await request(app.getHttpServer())
-        .get(`/patents/${createdPatentId}`)
-        .expect(404);
+      await request(app.getHttpServer()).get(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 });
-

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -10,6 +10,7 @@ describe('Memories (e2e)', () => {
   let createdMemoryId: string;
   let createdWorkId: string;
   let createdPatentId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,11 +18,39 @@ describe('Memories (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
+
+    // Crear usuario y obtener token con email único
+    const timestamp = Date.now();
+    const userDto = {
+      name: 'Memories Test User',
+      email: `memories-${timestamp}@example.com`,
+      password: 'password123',
+    };
+
+    await request(app.getHttpServer()).post('/users').send(userDto).expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: userDto.email,
+        password: userDto.password,
+      })
+      .expect(201);
+
+    authToken = loginResponse.body.access_token;
 
     // Crear un trabajo para usar en las memories
     const workResponse = await request(app.getHttpServer())
       .post('/works')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         title: 'Memory Test Work',
         authors: ['Test Author'],
@@ -33,14 +62,12 @@ describe('Memories (e2e)', () => {
     createdWorkId = workResponse.body.id;
 
     // Crear una patente para usar en las memories
-    const patentResponse = await request(app.getHttpServer())
-      .post('/patents')
-      .send({
-        title: 'Memory Test Patent',
-        code: 'MEM-PAT-001',
-        description: 'Test patent for memories',
-        organization: 'Test Org',
-      });
+    const patentResponse = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send({
+      title: 'Memory Test Patent',
+      code: 'MEM-PAT-001',
+      description: 'Test patent for memories',
+      organization: 'Test Org',
+    });
     createdPatentId = patentResponse.body.id;
   });
 
@@ -57,10 +84,7 @@ describe('Memories (e2e)', () => {
         patents: [],
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/memories')
-        .send(createMemoryDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/memories').set('Authorization', `Bearer ${authToken}`).send(createMemoryDto).expect(201);
 
       expect(response.body).toHaveProperty('message', 'Memory created successfully');
       expect(response.body).toHaveProperty('id');
@@ -77,10 +101,7 @@ describe('Memories (e2e)', () => {
         patents: [{ id: createdPatentId }],
       };
 
-      const response = await request(app.getHttpServer())
-        .post('/memories')
-        .send(createMemoryDto)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/memories').set('Authorization', `Bearer ${authToken}`).send(createMemoryDto).expect(201);
 
       expect(response.body).toHaveProperty('id');
     });
@@ -88,9 +109,7 @@ describe('Memories (e2e)', () => {
 
   describe('GET /memories', () => {
     it('debería obtener todas las memorias', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/memories')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/memories').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
@@ -105,9 +124,7 @@ describe('Memories (e2e)', () => {
 
   describe('GET /memories/:id', () => {
     it('debería obtener una memoria por ID', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/memories/${createdMemoryId}`)
-        .expect(200);
+      const response = await request(app.getHttpServer()).get(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body).toHaveProperty('id', createdMemoryId);
       expect(response.body).toHaveProperty('name', 'Test Memory 2024');
@@ -116,7 +133,7 @@ describe('Memories (e2e)', () => {
 
     it('debería retornar error 404 para ID inexistente', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      await request(app.getHttpServer()).get(`/memories/${fakeId}`).expect(404);
+      await request(app.getHttpServer()).get(`/memories/${fakeId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
@@ -126,10 +143,7 @@ describe('Memories (e2e)', () => {
         name: 'Updated Memory Name',
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/memories/${createdMemoryId}`)
-        .send(updateMemoryDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).send(updateMemoryDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdMemoryId);
       expect(response.body).toHaveProperty('name', 'Updated Memory Name');
@@ -142,10 +156,7 @@ describe('Memories (e2e)', () => {
         year: 2025,
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/memories/${createdMemoryId}`)
-        .send(updateMemoryDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).send(updateMemoryDto).expect(200);
 
       expect(response.body).toHaveProperty('year', 2025);
     });
@@ -156,10 +167,7 @@ describe('Memories (e2e)', () => {
         patents: [{ id: createdPatentId }],
       };
 
-      const response = await request(app.getHttpServer())
-        .patch(`/memories/${createdMemoryId}`)
-        .send(updateMemoryDto)
-        .expect(200);
+      const response = await request(app.getHttpServer()).patch(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).send(updateMemoryDto).expect(200);
 
       expect(response.body).toHaveProperty('id', createdMemoryId);
     });
@@ -167,31 +175,22 @@ describe('Memories (e2e)', () => {
 
   describe('DELETE /memories/:id', () => {
     it('debería eliminar una memoria', async () => {
-      await request(app.getHttpServer())
-        .delete(`/memories/${createdMemoryId}`)
-        .expect(204);
+      await request(app.getHttpServer()).delete(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
       // Verificar que la memoria fue eliminada
-      await request(app.getHttpServer())
-        .get(`/memories/${createdMemoryId}`)
-        .expect(404);
+      await request(app.getHttpServer()).get(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
   describe('Verificar integridad de datos', () => {
     it('los works y patents relacionados deben seguir existiendo después de eliminar una memoria', async () => {
       // Verificar que el work sigue existiendo
-      const workResponse = await request(app.getHttpServer())
-        .get(`/works/${createdWorkId}`)
-        .expect(200);
+      const workResponse = await request(app.getHttpServer()).get(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(workResponse.body).toHaveProperty('id', createdWorkId);
 
       // Verificar que la patent sigue existiendo
-      const patentResponse = await request(app.getHttpServer())
-        .get(`/patents/${createdPatentId}`)
-        .expect(200);
+      const patentResponse = await request(app.getHttpServer()).get(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(patentResponse.body).toHaveProperty('id', createdPatentId);
     });
   });
 });
-

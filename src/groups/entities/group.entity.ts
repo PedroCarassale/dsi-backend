@@ -1,10 +1,4 @@
-import {
-  PrimaryGeneratedColumn,
-  Column,
-  Entity,
-  ManyToMany,
-  JoinTable,
-} from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, ManyToMany, JoinTable } from 'typeorm';
 import { User } from 'src/usuarios/entities/usuario.entity';
 import { Memory } from 'src/memories/entities/memory.entity';
 

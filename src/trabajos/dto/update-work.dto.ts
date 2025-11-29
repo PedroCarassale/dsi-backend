@@ -1,10 +1,4 @@
-import { WorkType } from '../enums/work-type.enum';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateWorkDto } from './create-work.dto';
 
-export class UpdateWorkDto {
-  title?: string;
-  authors?: string[];
-  issn?: string;
-  journal?: string;
-  year?: number;
-  type?: WorkType;
-}
+export class UpdateWorkDto extends PartialType(CreateWorkDto) {}
