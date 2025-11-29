@@ -1,0 +1,99 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quick-checks:
+    name: 🚀 Validación Rápida
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Para comparaciones de diff
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🔍 Linting
+        run: npm run lint
+
+      - name: 🏗️ Build
+        run: npm run build
+
+  comment-pr:
+    name: 💬 Comentario en PR
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    if: always()
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: ✅ Comentario de éxito
+        if: needs.quick-checks.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **Quick checks pasaron!** El código está listo para revisión.\n\n' +
+                    '- ✅ Linting\n' +
+                    '- ✅ Build\n\n' +
+                    '_Los tests E2E completos se ejecutarán cuando se haga merge a main/develop._'
+            })
+
+      - name: ❌ Comentario de error
+        if: needs.quick-checks.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Quick checks fallaron!** Por favor revisa los errores.\n\n' +
+                    'Revisa los detalles en la pestaña Actions.'
+            })
+
+  pr-info:
+    name: 📊 Información del PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📊 Estadísticas del PR
+        run: |
+          echo "### 📊 Estadísticas del Pull Request" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | wc -l)
+          LINES_ADDED=$(git diff --numstat ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | awk '{sum+=$1} END {print sum}')
+          LINES_DELETED=$(git diff --numstat ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | awk '{sum+=$2} END {print sum}')
+
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 📁 Archivos modificados | $FILES_CHANGED |" >> $GITHUB_STEP_SUMMARY
+          echo "| ➕ Líneas añadidas | $LINES_ADDED |" >> $GITHUB_STEP_SUMMARY
+          echo "| ➖ Líneas eliminadas | $LINES_DELETED |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "#### 📁 Archivos modificados:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,146 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: 🔍 Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🔍 Ejecutar linter
+        run: npm run lint
+
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🏗️ Compilar aplicación
+        run: npm run build
+
+      - name: 💾 Guardar build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/
+          retention-days: 1
+
+  test-e2e:
+    name: 🧪 Tests E2E
+    runs-on: ubuntu-latest
+    needs: build
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dsi_backend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        test-suite:
+          - { name: 'Works', command: 'test:e2e:works' }
+          - { name: 'Users', command: 'test:e2e:users' }
+          - { name: 'Patents', command: 'test:e2e:patents' }
+          - { name: 'Memories', command: 'test:e2e:memories' }
+          - { name: 'Groups', command: 'test:e2e:groups' }
+          - { name: 'Integration', command: 'test:e2e:integration' }
+      fail-fast: false
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: dsi_backend
+      JWT_SECRET: test-secret-key-for-ci
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🧪 Tests ${{ matrix.test-suite.name }}
+        run: npm run ${{ matrix.test-suite.command }}
+
+      - name: 📊 Subir resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite.name }}
+          path: |
+            coverage/
+            **/*.log
+          retention-days: 7
+
+  summary:
+    name: 📝 Resumen
+    runs-on: ubuntu-latest
+    needs: [lint, build, test-e2e]
+    if: always()
+
+    steps:
+      - name: ✅ Pipeline exitoso
+        if: ${{ needs.lint.result == 'success' && needs.build.result == 'success' && needs.test-e2e.result == 'success' }}
+        run: |
+          echo "✅ ¡Todos los checks pasaron correctamente!"
+          echo "- Linting: ✅"
+          echo "- Build: ✅"
+          echo "- Tests E2E: ✅"
+
+      - name: ❌ Pipeline con errores
+        if: ${{ needs.lint.result != 'success' || needs.build.result != 'success' || needs.test-e2e.result != 'success' }}
+        run: |
+          echo "❌ Algunos checks fallaron:"
+          echo "- Linting: ${{ needs.lint.result }}"
+          echo "- Build: ${{ needs.build.result }}"
+          echo "- Tests E2E: ${{ needs.test-e2e.result }}"
+          exit 1
