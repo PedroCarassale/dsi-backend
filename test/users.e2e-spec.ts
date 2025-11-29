@@ -46,7 +46,6 @@ describe('Users (e2e)', () => {
 
       createdUserId = response.body.id;
 
-      // Hacer login para obtener token
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
@@ -109,7 +108,6 @@ describe('Users (e2e)', () => {
       expect(response.body).toHaveProperty('name', 'Test User');
       expect(response.body).toHaveProperty('email');
       expect(response.body.email).toMatch(/^test-\d+@example\.com$/);
-      // La contraseña debe estar hasheada, no en texto plano
       expect(response.body).toHaveProperty('password');
       expect(response.body.password).not.toBe('password123');
     });
@@ -130,7 +128,6 @@ describe('Users (e2e)', () => {
 
       expect(response.body).toHaveProperty('id', createdUserId);
       expect(response.body).toHaveProperty('name', 'Updated User Name');
-      // El email no debe cambiar, solo verificamos que existe
       expect(response.body).toHaveProperty('email');
       expect(response.body.email).toMatch(/^test-\d+@example\.com$/);
     });
@@ -154,7 +151,6 @@ describe('Users (e2e)', () => {
 
       const response = await request(app.getHttpServer()).patch(`/users/${createdUserId}`).set('Authorization', `Bearer ${authToken}`).send(updateUserDto).expect(200);
 
-      // La contraseña debe estar hasheada
       expect(response.body).toHaveProperty('password');
       expect(response.body.password).not.toBe('newpassword123');
     });
@@ -164,7 +160,6 @@ describe('Users (e2e)', () => {
     it('debería eliminar un usuario', async () => {
       await request(app.getHttpServer()).delete(`/users/${createdUserId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que el usuario fue eliminado
       await request(app.getHttpServer()).get(`/users/${createdUserId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });

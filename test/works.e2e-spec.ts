@@ -25,7 +25,6 @@ describe('Works (e2e)', () => {
     );
     await app.init();
 
-    // Crear usuario y obtener token con email único
     const timestamp = Date.now();
     const userDto = {
       name: 'Works Test User',
@@ -152,7 +151,6 @@ describe('Works (e2e)', () => {
       expect(response.body).toHaveProperty('id', createdWorkId);
       expect(response.body).toHaveProperty('title', 'Updated Test Article');
       expect(response.body).toHaveProperty('year', 2025);
-      // Los campos no actualizados deben permanecer igual
       expect(response.body.authors).toEqual(['John Doe', 'Jane Smith']);
       expect(response.body).toHaveProperty('issn', '1234-5678');
     });
@@ -172,7 +170,6 @@ describe('Works (e2e)', () => {
     it('debería eliminar un trabajo', async () => {
       await request(app.getHttpServer()).delete(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que el trabajo fue eliminado
       await request(app.getHttpServer()).get(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });

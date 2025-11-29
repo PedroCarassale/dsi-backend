@@ -1,4 +1,3 @@
-// @ts-check
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
@@ -29,16 +28,18 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { 
-        endOfLine: "auto",
-        printWidth: 200,
-        singleQuote: true,
-        trailingComma: "all"
-      }],
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'auto',
+          printWidth: 200,
+          singleQuote: true,
+          trailingComma: 'all',
+        },
+      ],
     },
   },
   {
-    // Reglas más permisivas para archivos de test
     files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',

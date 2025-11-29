@@ -24,7 +24,6 @@ describe('Patents (e2e)', () => {
     );
     await app.init();
 
-    // Crear usuario y obtener token con email único
     const timestamp = Date.now();
     const userDto = {
       name: 'Patents Test User',
@@ -134,7 +133,6 @@ describe('Patents (e2e)', () => {
 
       expect(response.body).toHaveProperty('id', createdPatentId);
       expect(response.body).toHaveProperty('title', 'Updated Patent Title');
-      // Los otros campos no deben cambiar
       expect(response.body).toHaveProperty('code', 'PAT-2024-001');
       expect(response.body).toHaveProperty('organization', 'Test Organization');
     });
@@ -156,7 +154,6 @@ describe('Patents (e2e)', () => {
     it('debería eliminar una patente', async () => {
       await request(app.getHttpServer()).delete(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que la patente fue eliminada
       await request(app.getHttpServer()).get(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });

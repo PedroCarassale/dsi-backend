@@ -25,7 +25,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_DATABASE || 'dsi_backend',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // ⚠️ Only for development, disable in production
+      synchronize: true,
     }),
     AuthModule,
     WorksModule,

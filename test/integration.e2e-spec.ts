@@ -22,7 +22,6 @@ describe('Integration Tests (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    // Crear usuario de prueba y obtener token para autenticación con email único
     const timestamp = Date.now();
     const testUser = {
       name: 'Integration Test User',
@@ -47,7 +46,6 @@ describe('Integration Tests (e2e)', () => {
     await app.close();
   });
 
-  // Helper function para validar respuestas de creación
   const validateCreationResponse = (response: request.Response, expectedMessage: string): string => {
     const body = response.body as CreationResponse;
     expect(body).toHaveProperty('message', expectedMessage);
@@ -57,31 +55,26 @@ describe('Integration Tests (e2e)', () => {
     return body.id;
   };
 
-  // Helper function para crear un usuario
   const createUser = async (name: string, email: string, password: string): Promise<string> => {
     const response = await request(app.getHttpServer()).post('/users').send({ name, email, password }).expect(201);
     return validateCreationResponse(response, 'User created successfully');
   };
 
-  // Helper function para crear un trabajo
   const createWork = async (title: string, authors: string[], issn: string, journal: string, year: number, type: WorkType): Promise<string> => {
     const response = await request(app.getHttpServer()).post('/works').set('Authorization', `Bearer ${authToken}`).send({ title, authors, issn, journal, year, type }).expect(201);
     return validateCreationResponse(response, 'Work created successfully');
   };
 
-  // Helper function para crear una patente
   const createPatent = async (title: string, code: string, description: string, organization: string): Promise<string> => {
     const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send({ title, code, description, organization }).expect(201);
     return validateCreationResponse(response, 'Patent created successfully');
   };
 
-  // Helper function para crear una memoria
   const createMemory = async (name: string, year: number, works: { id: string }[], patents: { id: string }[]): Promise<string> => {
     const response = await request(app.getHttpServer()).post('/memories').set('Authorization', `Bearer ${authToken}`).send({ name, year, works, patents }).expect(201);
     return validateCreationResponse(response, 'Memory created successfully');
   };
 
-  // Helper function para crear un grupo
   const createGroup = async (name: string, users: { id: string }[], memories: { id: string }[]): Promise<string> => {
     const response = await request(app.getHttpServer()).post('/groups').set('Authorization', `Bearer ${authToken}`).send({ name, users, memories }).expect(201);
     return validateCreationResponse(response, 'Group created successfully');
@@ -131,19 +124,15 @@ describe('Integration Tests (e2e)', () => {
     });
 
     it('Paso 7: Verificar que todas las entidades siguen existiendo', async () => {
-      // Verificar usuarios
       await request(app.getHttpServer()).get(`/users/${userId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/users/${userId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
-      // Verificar trabajos
       await request(app.getHttpServer()).get(`/works/${workId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/works/${workId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
-      // Verificar patentes
       await request(app.getHttpServer()).get(`/patents/${patentId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/patents/${patentId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
-      // Verificar memorias
       await request(app.getHttpServer()).get(`/memories/${memoryId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/memories/${memoryId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
     });
@@ -163,16 +152,13 @@ describe('Integration Tests (e2e)', () => {
     it('Paso 9: Limpiar - Eliminar grupo', async () => {
       await request(app.getHttpServer()).delete(`/groups/${groupId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que el grupo fue eliminado
       await request(app.getHttpServer()).get(`/groups/${groupId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
 
     it('Paso 10: Verificar que las entidades relacionadas siguen existiendo después de eliminar el grupo', async () => {
-      // Los usuarios deben seguir existiendo
       await request(app.getHttpServer()).get(`/users/${userId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/users/${userId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
 
-      // Las memorias deben seguir existiendo
       await request(app.getHttpServer()).get(`/memories/${memoryId1}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       await request(app.getHttpServer()).get(`/memories/${memoryId2}`).set('Authorization', `Bearer ${authToken}`).expect(200);
     });
@@ -182,13 +168,11 @@ describe('Integration Tests (e2e)', () => {
     it('debería manejar correctamente la creación de múltiples entidades del mismo tipo', async () => {
       const workIds: string[] = [];
 
-      // Crear 5 trabajos usando la función helper
       for (let i = 1; i <= 5; i++) {
         const workId = await createWork(`Bulk Work ${i}`, [`Author ${i}`], `BULK-${i}`, 'Bulk Journal', 2024, WorkType.ARTICLE);
         workIds.push(workId);
       }
 
-      // Verificar que todos se crearon
       const allWorksResponse = await request(app.getHttpServer()).get('/works').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(Array.isArray(allWorksResponse.body)).toBe(true);
@@ -197,17 +181,14 @@ describe('Integration Tests (e2e)', () => {
     });
 
     it('debería poder actualizar parcialmente cualquier entidad', async () => {
-      // Crear un usuario usando la función helper
       const timestamp = Date.now();
       const userEmail = `partial-${timestamp}@test.com`;
       const userId = await createUser('Partial Update User', userEmail, 'password');
 
-      // Actualizar solo el nombre
       const updateResponse = await request(app.getHttpServer()).patch(`/users/${userId}`).set('Authorization', `Bearer ${authToken}`).send({ name: 'New Name Only' }).expect(200);
 
       expect(updateResponse.body).toHaveProperty('name', 'New Name Only');
       expect(updateResponse.body).toHaveProperty('email', userEmail);
-      // La contraseña debe estar hasheada, no en texto plano
       expect(updateResponse.body).toHaveProperty('password');
       expect(updateResponse.body.password).not.toBe('password');
     });

@@ -26,7 +26,6 @@ describe('Groups (e2e)', () => {
     );
     await app.init();
 
-    // Crear usuario y obtener token con email único
     const timestamp = Date.now();
     const userDto = {
       name: 'Groups Test User',
@@ -47,7 +46,6 @@ describe('Groups (e2e)', () => {
 
     authToken = loginResponse.body.access_token;
 
-    // Crear una memoria para usar en los grupos
     const memoryResponse = await request(app.getHttpServer()).post('/memories').set('Authorization', `Bearer ${authToken}`).send({
       name: 'Group Test Memory',
       year: 2024,
@@ -157,18 +155,15 @@ describe('Groups (e2e)', () => {
     it('debería eliminar un grupo', async () => {
       await request(app.getHttpServer()).delete(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que el grupo fue eliminado
       await request(app.getHttpServer()).get(`/groups/${createdGroupId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
   describe('Verificar integridad de datos', () => {
     it('los users y memories relacionados deben seguir existiendo después de eliminar un grupo', async () => {
-      // Verificar que el user sigue existiendo
       const userResponse = await request(app.getHttpServer()).get(`/users/${createdUserId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(userResponse.body).toHaveProperty('id', createdUserId);
 
-      // Verificar que la memory sigue existiendo
       const memoryResponse = await request(app.getHttpServer()).get(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(memoryResponse.body).toHaveProperty('id', createdMemoryId);
     });

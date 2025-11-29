@@ -27,7 +27,6 @@ describe('Memories (e2e)', () => {
     );
     await app.init();
 
-    // Crear usuario y obtener token con email único
     const timestamp = Date.now();
     const userDto = {
       name: 'Memories Test User',
@@ -47,7 +46,6 @@ describe('Memories (e2e)', () => {
 
     authToken = loginResponse.body.access_token;
 
-    // Crear un trabajo para usar en las memories
     const workResponse = await request(app.getHttpServer())
       .post('/works')
       .set('Authorization', `Bearer ${authToken}`)
@@ -61,7 +59,6 @@ describe('Memories (e2e)', () => {
       });
     createdWorkId = workResponse.body.id;
 
-    // Crear una patente para usar en las memories
     const patentResponse = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send({
       title: 'Memory Test Patent',
       code: 'MEM-PAT-001',
@@ -147,7 +144,6 @@ describe('Memories (e2e)', () => {
 
       expect(response.body).toHaveProperty('id', createdMemoryId);
       expect(response.body).toHaveProperty('name', 'Updated Memory Name');
-      // El año no debe cambiar
       expect(response.body).toHaveProperty('year', 2024);
     });
 
@@ -177,18 +173,15 @@ describe('Memories (e2e)', () => {
     it('debería eliminar una memoria', async () => {
       await request(app.getHttpServer()).delete(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(204);
 
-      // Verificar que la memoria fue eliminada
       await request(app.getHttpServer()).get(`/memories/${createdMemoryId}`).set('Authorization', `Bearer ${authToken}`).expect(404);
     });
   });
 
   describe('Verificar integridad de datos', () => {
     it('los works y patents relacionados deben seguir existiendo después de eliminar una memoria', async () => {
-      // Verificar que el work sigue existiendo
       const workResponse = await request(app.getHttpServer()).get(`/works/${createdWorkId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(workResponse.body).toHaveProperty('id', createdWorkId);
 
-      // Verificar que la patent sigue existiendo
       const patentResponse = await request(app.getHttpServer()).get(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).expect(200);
       expect(patentResponse.body).toHaveProperty('id', createdPatentId);
     });
