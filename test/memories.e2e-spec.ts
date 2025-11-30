@@ -64,6 +64,7 @@ describe('Memories (e2e)', () => {
       code: 'MEM-PAT-001',
       description: 'Test patent for memories',
       organization: 'Test Org',
+      year: 2025,
     });
     createdPatentId = patentResponse.body.id;
   });

@@ -55,6 +55,7 @@ describe('Patents (e2e)', () => {
         code: 'PAT-2024-001',
         description: 'This is a test patent description',
         organization: 'Test Organization',
+        year: 2024,
       };
 
       const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send(createPatentDto).expect(201);
@@ -73,12 +74,14 @@ describe('Patents (e2e)', () => {
           code: 'PAT-2024-002',
           description: 'Second patent description',
           organization: 'Org Two',
+          year: 2024,
         },
         {
           title: 'Patent Three',
           code: 'PAT-2024-003',
           description: 'Third patent description',
           organization: 'Org Three',
+          year: 2024,
         },
       ];
 
@@ -103,6 +106,7 @@ describe('Patents (e2e)', () => {
       expect(patent).toHaveProperty('code');
       expect(patent).toHaveProperty('description');
       expect(patent).toHaveProperty('organization');
+      expect(patent).toHaveProperty('year');
     });
   });
 
@@ -115,6 +119,7 @@ describe('Patents (e2e)', () => {
       expect(response.body).toHaveProperty('code', 'PAT-2024-001');
       expect(response.body).toHaveProperty('description', 'This is a test patent description');
       expect(response.body).toHaveProperty('organization', 'Test Organization');
+      expect(response.body).toHaveProperty('year', 2024);
     });
 
     it('debería retornar error 404 para ID inexistente', async () => {
@@ -141,12 +146,14 @@ describe('Patents (e2e)', () => {
       const updatePatentDto = {
         description: 'Updated description',
         organization: 'Updated Organization',
+        year: 2025,
       };
 
       const response = await request(app.getHttpServer()).patch(`/patents/${createdPatentId}`).set('Authorization', `Bearer ${authToken}`).send(updatePatentDto).expect(200);
 
       expect(response.body).toHaveProperty('description', 'Updated description');
       expect(response.body).toHaveProperty('organization', 'Updated Organization');
+      expect(response.body).toHaveProperty('year', 2025);
     });
   });
 

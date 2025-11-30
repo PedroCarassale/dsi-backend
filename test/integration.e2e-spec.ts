@@ -65,8 +65,8 @@ describe('Integration Tests (e2e)', () => {
     return validateCreationResponse(response, 'Work created successfully');
   };
 
-  const createPatent = async (title: string, code: string, description: string, organization: string): Promise<string> => {
-    const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send({ title, code, description, organization }).expect(201);
+  const createPatent = async (title: string, code: string, description: string, organization: string, year: number): Promise<string> => {
+    const response = await request(app.getHttpServer()).post('/patents').set('Authorization', `Bearer ${authToken}`).send({ title, code, description, organization, year }).expect(201);
     return validateCreationResponse(response, 'Patent created successfully');
   };
 
@@ -103,8 +103,8 @@ describe('Integration Tests (e2e)', () => {
     });
 
     it('Paso 3: Crear patentes', async () => {
-      patentId1 = await createPatent('Integration Patent 1', 'INT-PAT-001', 'First integration patent', 'Integration Org');
-      patentId2 = await createPatent('Integration Patent 2', 'INT-PAT-002', 'Second integration patent', 'Integration Org');
+      patentId1 = await createPatent('Integration Patent 1', 'INT-PAT-001', 'First integration patent', 'Integration Org', 2024);
+      patentId2 = await createPatent('Integration Patent 2', 'INT-PAT-002', 'Second integration patent', 'Integration Org', 2023);
     });
 
     it('Paso 4: Crear memorias con trabajos y patentes', async () => {
