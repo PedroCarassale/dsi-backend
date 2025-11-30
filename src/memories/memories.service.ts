@@ -18,12 +18,17 @@ export class MemoriesService {
   }
 
   async findAll(): Promise<Memory[]> {
-    return await this.memoryRepository.find();
+    return await this.memoryRepository.find({
+      relations: ['works', 'patents'],
+    });
   }
 
   async findOne(id: string): Promise<Memory> {
     try {
-      return await this.memoryRepository.findOneOrFail({ where: { id } });
+      return await this.memoryRepository.findOneOrFail({
+        where: { id },
+        relations: ['works', 'patents'],
+      });
     } catch {
       throw new NotFoundException(`Memory with ID ${id} not found`);
     }
