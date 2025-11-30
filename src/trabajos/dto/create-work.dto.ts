@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsArray, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, IsNumber, IsEnum, IsOptional } from 'class-validator';
 import { WorkType } from '../enums/work-type.enum';
 
 export class CreateWorkDto {
@@ -16,7 +16,7 @@ export class CreateWorkDto {
   issn: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   journal: string;
 
   @IsNumber()
