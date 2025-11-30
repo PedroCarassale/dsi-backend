@@ -11,6 +11,13 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.enableCors({
+    origin: 'http://localhost:5173', // Puerto por defecto de Vite
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Authorization',
+  });
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
