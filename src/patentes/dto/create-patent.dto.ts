@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class CreatePatentDto {
   @IsString()
@@ -20,4 +20,8 @@ export class CreatePatentDto {
   @IsNumber()
   @IsNotEmpty()
   year: number;
+
+  @IsString()
+  @IsOptional()
+  property: string;
 }

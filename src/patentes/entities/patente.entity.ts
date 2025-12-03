@@ -21,6 +21,9 @@ export class Patent {
   @Column()
   year: number;
 
+  @Column({ nullable: true })
+  property: string;
+
   @ManyToMany(() => Memory, (memory) => memory.patents)
   memories: Memory[];
 }
